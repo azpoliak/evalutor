@@ -3,17 +3,61 @@ import argparse # optparse is deprecated
 from itertools import islice # slicing for iterators
 import pdb
 from nltk.corpus import wordnet as wn
- 
+import sys
+
+def synonym_lookup(ref, h): 
+    count = 0
+
+    rset_synset = set()
+    all_lsts = [] 
+    for item in ref:
+        try:
+            all_lsts.append(wn.synsets(item))
+        except:
+            continue
+    
+    for lst in all_lsts:
+        for item in lst:
+            if item not in rset_synset:
+                rset_synset.add(item)
+
+    threshold = .26
+
+    for word in h:
+        try:
+            for net1 in wn.synsets(word):
+                for net2 in rset_synset:
+                    try:
+                        lch = net1.lch_similarity(net2)
+                    except:
+                        continue
+        
+                    if lch >= threshold:
+                        count += 1
+                        #yield (net1, net2, lch)
+        except:
+            sys.stderr.write(word+"\n")
+            continue
+
+    return count
 
 def word_matches(h, ref):
     return sum(1 for w in h if w in ref)
 
 def meteor(h, ref, alpha):
-    precision = word_matches(h, ref) / float(len(ref))
-    recall = word_matches(h, ref) / float(len(h))
+    intesection = word_matches(h, ref)
+
+    ref_prime = [word for word in ref if word not in h]
+    h_prime = [word for word in h if word not in ref]
+
+    synonym_counts = synonym_lookup(set(ref_prime), set(h_prime))
+
+    precision = (word_matches(h, ref) + synonym_counts) / float(len(ref))
+    recall = (word_matches(h, ref) + synonym_counts) / float(len(h))
 
     if recall == 0 and precision == 0:
         return 0
+        #synonym_lookup(ref, h)
     return (precision * recall) / ((1 - alpha) * recall + alpha * precision)
 
  
@@ -34,17 +78,12 @@ def main():
             for pair in f:
                 yield [sentence.strip().split() for sentence in pair.split(' ||| ')]
  
+    choice = 0 
     # note: the -n option does not work in the original code
     for h1, h2, ref in islice(sentences(), opts.num_sentences):
         rset = set(ref)
         syn_set = set()
-        all_lsts = [wn.synsets(item) for item in rset] 
-        for lst in all_lsts:
-            for item in lst:
-                if item not in syn_set:
-                    syn_set.add(item)
-
-        pdb.set_trace()
+        #pdb.set_trace()
 
         #determine whether to run METEOR or Adam Lopez's starter code
         if opts.alpha == 0:
@@ -56,6 +95,8 @@ def main():
         print(1 if h1_match > h2_match else # \begin{cases}
                 (0 if h1_match == h2_match
                     else -1)) # \end{cases}
+        choice += 1
+        sys.stderr.write(str(choice)+"\n")
  
 # convention to allow import of this file as a module
 if __name__ == '__main__':
