@@ -25,15 +25,18 @@ def synonym_lookup(ref, h):
 
     for word in h:
         try:
+            syn_found = False 
             for net1 in wn.synsets(word):
                 for net2 in rset_synset:
                     try:
                         lch = net1.lch_similarity(net2)
                     except:
                         continue
-        
+                    
                     if lch >= threshold:
-                        count += 1
+                        syn_found = True
+            if syn_found == True:
+                count += 1
                         #yield (net1, net2, lch)
         except:
             sys.stderr.write(word+"\n")
@@ -51,6 +54,7 @@ def meteor(h, ref, alpha):
     h_prime = [word for word in h if word not in ref]
 
     synonym_counts = synonym_lookup(set(ref_prime), set(h_prime))
+    pdb.set_trace()
 
     precision = (word_matches(h, ref) + synonym_counts) / float(len(ref))
     recall = (word_matches(h, ref) + synonym_counts) / float(len(h))
