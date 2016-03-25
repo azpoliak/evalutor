@@ -5,7 +5,7 @@ import pdb
 from nltk.corpus import wordnet as wn
 import sys
 
-def synonym_lookup(ref, h): 
+def synonym_lookup(ref, h, threshold): 
     count = 0
 
     rset_synset = set()
@@ -20,8 +20,6 @@ def synonym_lookup(ref, h):
         for item in lst:
             if item not in rset_synset:
                 rset_synset.add(item)
-
-    threshold = .26
 
     for word in h:
         try:
@@ -47,14 +45,13 @@ def synonym_lookup(ref, h):
 def word_matches(h, ref):
     return sum(1 for w in h if w in ref)
 
-def meteor(h, ref, alpha):
+def meteor(h, ref, alpha, threshold):
     intesection = word_matches(h, ref)
 
     ref_prime = [word for word in ref if word not in h]
     h_prime = [word for word in h if word not in ref]
 
-    synonym_counts = synonym_lookup(set(ref_prime), set(h_prime))
-    pdb.set_trace()
+    synonym_counts = synonym_lookup(set(ref_prime), set(h_prime), threshold)
 
     precision = (word_matches(h, ref) + synonym_counts) / float(len(ref))
     recall = (word_matches(h, ref) + synonym_counts) / float(len(h))
@@ -73,6 +70,8 @@ def main():
             help='Number of hypothesis pairs to evaluate')
     parser.add_argument('-a', '--alpha', default=0, type=float,
             help='alpha value for meteor')
+    parser.add_argument('-t', '--threshold', default=2.26, type=float,
+            help='threshold for word net')
     # note that if x == [1, 2, 3], then x[:None] == x[:] == x (copy); no need for sys.maxint
     opts = parser.parse_args()
  
@@ -94,8 +93,8 @@ def main():
             h1_match = word_matches(h1, rset)
             h2_match = word_matches(h2, rset)
         else:
-            h1_match = meteor(h1, rset, opts.alpha) #word_matches(h1, rset)
-            h2_match = meteor(h2, rset, opts.alpha) #word_matches(h2, rset)
+            h1_match = meteor(h1, rset, opts.alpha, opts.threshold) #word_matches(h1, rset)
+            h2_match = meteor(h2, rset, opts.alpha, opts.threshold) #word_matches(h2, rset)
         print(1 if h1_match > h2_match else # \begin{cases}
                 (0 if h1_match == h2_match
                     else -1)) # \end{cases}
