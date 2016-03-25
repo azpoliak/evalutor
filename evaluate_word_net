@@ -39,6 +39,8 @@ def synonym_lookup(ref, h):
                 count += 1
                         #yield (net1, net2, lch)
         except:
+            if syn_found == True:
+                count += 1
             sys.stderr.write(word+"\n")
             continue
 
@@ -54,7 +56,7 @@ def meteor(h, ref, alpha):
     h_prime = [word for word in h if word not in ref]
 
     synonym_counts = synonym_lookup(set(ref_prime), set(h_prime))
-    pdb.set_trace()
+    #pdb.set_trace()
 
     precision = (word_matches(h, ref) + synonym_counts) / float(len(ref))
     recall = (word_matches(h, ref) + synonym_counts) / float(len(h))
